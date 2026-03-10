@@ -100,7 +100,7 @@ function Hearts({ lives }) {
 }
 
 function Certificate({ nickname, wish, canvasRef, onReady, timeSec, maxCombo, lives }) {
-  const fmtTime=(s)=>`${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;
+  const fmtTime=(s)=>{const m=Math.floor(s/60);const sec=(s%60).toFixed(3);return `${m}:${sec.padStart(6,"0")}`;};
   useEffect(()=>{
     const canvas=canvasRef.current; if(!canvas) return;
     const ctx=canvas.getContext("2d"); const W=800,H=600;
@@ -135,6 +135,8 @@ function Certificate({ nickname, wish, canvasRef, onReady, timeSec, maxCombo, li
 }
 
 // ─── Guestbook (Firebase Firestore) ──────────────
+const _fmtTime=(s)=>{const m=Math.floor(s/60);const sec=((s||0)%60).toFixed(3);return `${m}:${sec.padStart(6,"0")}`;};
+
 function Guestbook({ nickname, wish, timeSec, maxCombo, lives }) {
   const [entries, setEntries] = useState([]);
   const [message, setMessage] = useState("");
@@ -179,8 +181,6 @@ function Guestbook({ nickname, wish, timeSec, maxCombo, lives }) {
     }
   };
 
-  const fmtTime = (s) => `${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;
-
   return (
     <div style={{ width:"100%", maxWidth:340, display:"flex", flexDirection:"column", gap:12 }}>
       <div style={{ fontSize:12, color:COLORS.accent, textAlign:"center", textShadow:"2px 2px 0 #000" }}>📖 방명록</div>
@@ -209,7 +209,7 @@ function Guestbook({ nickname, wish, timeSec, maxCombo, lives }) {
             </div>
             <div style={{ fontSize:8, color:"#ddd", fontFamily:FONT_PIXEL, lineHeight:1.6, wordBreak:"break-all" }}>{e.message}</div>
             <div style={{ fontSize:7, color:"#777", fontFamily:FONT_PIXEL }}>
-              ⏱️{fmtTime(e.timeSec)} | 콤보x{e.maxCombo} | ❤️{e.lives}{e.wish?` | ✨${e.wish}`:""}
+              ⏱️{_fmtTime(e.timeSec)} | 콤보x{e.maxCombo} | ❤️{e.lives}{e.wish?` | ✨${e.wish}`:""}
             </div>
           </div>
         ))}
@@ -244,7 +244,6 @@ function Ranking({ onBack }) {
     setLoading(false);
   };
 
-  const fmtTime = (s) => `${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;
   const medals = ["🥇", "🥈", "🥉"];
   const rankColors = ["#FFD700", "#C0C0C0", "#CD7F32"];
 
@@ -284,7 +283,7 @@ function Ranking({ onBack }) {
                   <span style={{ fontSize: 7, color: "#666", fontFamily: FONT_PIXEL }}>{e.date}</span>
                 </div>
                 <div style={{ fontSize: 8, color: "#aaa", fontFamily: FONT_PIXEL }}>
-                  ⏱️ {fmtTime(e.timeSec || 0)} | ❤️ {e.lives || 0} | 🔥 x{e.maxCombo || 0}
+                  ⏱️ {_fmtTime(e.timeSec || 0)} | ❤️ {e.lives || 0} | 🔥 x{e.maxCombo || 0}
                   {e.wish ? ` | ✨${e.wish}` : ""}
                 </div>
               </div>
@@ -402,8 +401,8 @@ export default function GwanaksanClimb() {
     return ()=>window.removeEventListener("keydown",onKey);
   },[handleStep]);
 
-  const timeSec = endTime&&startTime ? Math.floor((endTime-startTime)/1000) : 0;
-  const formatTime=(s)=>`${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;
+  const timeSec = endTime&&startTime ? (endTime-startTime)/1000 : 0;
+  const formatTime=(s)=>{const m=Math.floor(s/60);const sec=(s%60).toFixed(3);return `${m}:${sec.padStart(6,"0")}`;};
   const handleCertDownload=()=>{ sfx.playUI(); const c=certCanvasRef.current; if(!c)return; const a=document.createElement("a"); a.download=`관악산_등산완료증_${nickname}.png`; a.href=c.toDataURL("image/png"); a.click(); };
 
   return (
