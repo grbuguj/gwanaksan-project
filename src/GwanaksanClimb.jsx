@@ -250,7 +250,7 @@ function Ranking({ onBack }) {
 
   return (
     <div style={{ position:"absolute", inset:0, display:"flex", flexDirection:"column", alignItems:"center", gap:12, padding:20, zIndex:10, background:"rgba(0,0,0,0.7)", overflowY:"auto" }}>
-      <div style={{ fontSize:16, color:COLORS.accent, textShadow:"2px 2px 0 #000", marginTop:16 }}>🏆 등산 랭킹 🏆</div>
+      <div style={{ fontSize:16, color:COLORS.accent, textShadow:"2px 2px 0 #000", marginTop:16 }}>🏆 명예의전당 🏆</div>
       <div style={{ fontSize:8, color:"#aaa" }}>빠른 시간순 (같으면 ❤️ 많은 순)</div>
 
       <div style={{ width:"100%", maxWidth:360, display:"flex", flexDirection:"column", gap:6, flex:1, overflowY:"auto", paddingBottom:8 }}>
