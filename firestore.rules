@@ -1,0 +1,27 @@
+// 📌 Firebase Console → Firestore Database → 규칙 탭에 아래 내용 붙여넣기
+//
+// 이 규칙은:
+// - 누구나 방명록 읽기 가능 (로그인 불필요)
+// - 누구나 방명록 쓰기 가능 (but 필드 검증)
+// - 수정/삭제는 불가
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /guestbook/{entry} {
+      // 누구나 읽기 가능
+      allow read: if true;
+
+      // 쓰기: 필수 필드 검증 + 새 문서만 (수정 불가)
+      allow create: if
+        request.resource.data.keys().hasAll(['nickname', 'message', 'date', 'createdAt']) &&
+        request.resource.data.nickname is string &&
+        request.resource.data.nickname.size() <= 10 &&
+        request.resource.data.message is string &&
+        request.resource.data.message.size() <= 50;
+
+      // 수정/삭제 불가
+      allow update, delete: if false;
+    }
+  }
+}
