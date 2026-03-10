@@ -230,6 +230,7 @@ export default function GwanaksanClimb() {
   const [currentStep, setCurrentStep] = useState(0);
   const [stairs, setStairs] = useState([]);
   const [isJumping, setIsJumping] = useState(false);
+  const inputLockRef = useRef(false);
   const [isStumble, setIsStumble] = useState(false);
   const [direction, setDirection] = useState("left");
   const [combo, setCombo] = useState(0);
@@ -277,7 +278,7 @@ export default function GwanaksanClimb() {
   },[]);
 
   const resetGame = useCallback(()=>{
-    setStairs(generateStairs()); setCurrentStep(0); setCombo(0); setMaxCombo(0); setLives(MAX_LIVES); setWish(""); setStartTime(Date.now()); setDirection("left"); setFallAnim(false); setIsJumping(false); setIsStumble(false); setCertReady(false); setMilestoneText(null); prevMilestoneRef.current=-1;
+    setStairs(generateStairs()); setCurrentStep(0); setCombo(0); setMaxCombo(0); setLives(MAX_LIVES); setWish(""); setStartTime(Date.now()); setDirection("left"); setFallAnim(false); setIsJumping(false); setIsStumble(false); setCertReady(false); setMilestoneText(null); prevMilestoneRef.current=-1; inputLockRef.current=false;
   },[]);
 
   const handleStart = async () => {
@@ -287,17 +288,16 @@ export default function GwanaksanClimb() {
   };
 
   const handleStep = useCallback((clickDir)=>{
-    if(screen!=="playing"||isJumping||currentStep>=TOTAL_STEPS||fallAnim) return;
+    if(screen!=="playing"||inputLockRef.current||currentStep>=TOTAL_STEPS||fallAnim) return;
+    inputLockRef.current = true;
     if(clickDir===expectedDir) {
       setIsJumping(true); setDirection(clickDir);
       const nc=combo+1; setCombo(nc); if(nc>maxCombo) setMaxCombo(nc);
       sfx.playStep(nc);
       if(nc===10||nc===20||nc===30||nc===50) sfx.playComboMilestone();
       addParticles(clickDir==="left"?100:260, 280, nc>5?8:4);
-      setTimeout(()=>{
-        setCurrentStep(s=>{const next=s+1; if(next>=TOTAL_STEPS){setEndTime(Date.now());sfx.playSummit();setTimeout(()=>setScreen("wish"),800);} return next;});
-        setIsJumping(false);
-      },140);
+      setCurrentStep(s=>{const next=s+1; if(next>=TOTAL_STEPS){setEndTime(Date.now());sfx.playSummit();setTimeout(()=>setScreen("wish"),800);} return next;});
+      setTimeout(()=>{ setIsJumping(false); inputLockRef.current=false; },80);
     } else {
       setIsStumble(true); setShakeScreen(true); setCombo(0);
       sfx.playWrong();
@@ -309,9 +309,9 @@ export default function GwanaksanClimb() {
         setTimeout(()=>sfx.playGameOver(),200);
         setTimeout(()=>{setScreen("gameover");setFallAnim(false);},800);
       }
-      setTimeout(()=>{setIsStumble(false);setShakeScreen(false);},300);
+      setTimeout(()=>{setIsStumble(false);setShakeScreen(false);inputLockRef.current=false;},250);
     }
-  },[screen,isJumping,currentStep,expectedDir,combo,maxCombo,lives,addParticles,fallAnim]);
+  },[screen,currentStep,expectedDir,combo,maxCombo,lives,addParticles,fallAnim]);
 
   useEffect(()=>{
     const onKey=(e)=>{
@@ -427,14 +427,18 @@ export default function GwanaksanClimb() {
           </div>
 
           <div style={{ position:"absolute", bottom:0, left:0, right:0, height:80, display:"flex", zIndex:20 }}>
-            <button onClick={()=>handleStep("left")}
-              style={{ flex:1, background:"rgba(255,215,0,0.15)", border:"none", borderRight:"1px solid rgba(255,215,0,0.2)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8, color:COLORS.accent, fontFamily:FONT_PIXEL, fontSize:14, transition:"background 0.1s" }}
-              onPointerDown={e=>{e.currentTarget.style.background="rgba(255,215,0,0.35)"}} onPointerUp={e=>{e.currentTarget.style.background="rgba(255,215,0,0.15)"}} onPointerLeave={e=>{e.currentTarget.style.background="rgba(255,215,0,0.15)"}}>
+            <button
+              onPointerDown={e=>{e.preventDefault();e.currentTarget.style.background="rgba(255,215,0,0.35)";handleStep("left");}}
+              onPointerUp={e=>{e.currentTarget.style.background="rgba(255,215,0,0.15)"}}
+              onPointerLeave={e=>{e.currentTarget.style.background="rgba(255,215,0,0.15)"}}
+              style={{ flex:1, background:"rgba(255,215,0,0.15)", border:"none", borderRight:"1px solid rgba(255,215,0,0.2)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8, color:COLORS.accent, fontFamily:FONT_PIXEL, fontSize:14, transition:"background 0.1s", touchAction:"manipulation" }}>
               ◀ 왼쪽
             </button>
-            <button onClick={()=>handleStep("right")}
-              style={{ flex:1, background:"rgba(255,107,53,0.15)", border:"none", borderLeft:"1px solid rgba(255,107,53,0.2)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8, color:COLORS.character, fontFamily:FONT_PIXEL, fontSize:14, transition:"background 0.1s" }}
-              onPointerDown={e=>{e.currentTarget.style.background="rgba(255,107,53,0.35)"}} onPointerUp={e=>{e.currentTarget.style.background="rgba(255,107,53,0.15)"}} onPointerLeave={e=>{e.currentTarget.style.background="rgba(255,107,53,0.15)"}}>
+            <button
+              onPointerDown={e=>{e.preventDefault();e.currentTarget.style.background="rgba(255,107,53,0.35)";handleStep("right");}}
+              onPointerUp={e=>{e.currentTarget.style.background="rgba(255,107,53,0.15)"}}
+              onPointerLeave={e=>{e.currentTarget.style.background="rgba(255,107,53,0.15)"}}
+              style={{ flex:1, background:"rgba(255,107,53,0.15)", border:"none", borderLeft:"1px solid rgba(255,107,53,0.2)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8, color:COLORS.character, fontFamily:FONT_PIXEL, fontSize:14, transition:"background 0.1s", touchAction:"manipulation" }}>
               오른쪽 ▶
             </button>
           </div>
