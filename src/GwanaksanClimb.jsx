@@ -218,6 +218,86 @@ function Guestbook({ nickname, wish, timeSec, maxCombo, lives }) {
   );
 }
 
+// ─── Ranking ─────────────────────────────────────
+function Ranking({ onBack }) {
+  const [entries, setEntries] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => { loadRanking(); }, []);
+
+  const loadRanking = async () => {
+    setLoading(true);
+    try {
+      const q = query(collection(db, "guestbook"), orderBy("createdAt", "desc"), limit(100));
+      const snapshot = await getDocs(q);
+      const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      // Sort: timeSec asc → same time: lives desc
+      docs.sort((a, b) => {
+        if ((a.timeSec || 9999) !== (b.timeSec || 9999)) return (a.timeSec || 9999) - (b.timeSec || 9999);
+        return (b.lives || 0) - (a.lives || 0);
+      });
+      setEntries(docs);
+    } catch (e) {
+      console.error("랭킹 불러오기 실패:", e);
+      setEntries([]);
+    }
+    setLoading(false);
+  };
+
+  const fmtTime = (s) => `${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;
+  const medals = ["🥇", "🥈", "🥉"];
+  const rankColors = ["#FFD700", "#C0C0C0", "#CD7F32"];
+
+  return (
+    <div style={{ position:"absolute", inset:0, display:"flex", flexDirection:"column", alignItems:"center", gap:12, padding:20, zIndex:10, background:"rgba(0,0,0,0.7)", overflowY:"auto" }}>
+      <div style={{ fontSize:16, color:COLORS.accent, textShadow:"2px 2px 0 #000", marginTop:16 }}>🏆 등산 랭킹 🏆</div>
+      <div style={{ fontSize:8, color:"#aaa" }}>빠른 시간순 (같으면 ❤️ 많은 순)</div>
+
+      <div style={{ width:"100%", maxWidth:360, display:"flex", flexDirection:"column", gap:6, flex:1, overflowY:"auto", paddingBottom:8 }}>
+        {loading ? (
+          <div style={{ fontSize:8, color:"#888", textAlign:"center", padding:24 }}>불러오는 중...</div>
+        ) : entries.length === 0 ? (
+          <div style={{ fontSize:8, color:"#888", textAlign:"center", padding:24 }}>아직 기록이 없어요!<br/>첫 번째 등산가가 되어보세요 🥾</div>
+        ) : entries.map((e, idx) => {
+          const isTop3 = idx < 3;
+          const medal = medals[idx] || "";
+          const borderColor = isTop3 ? rankColors[idx] : "rgba(255,215,0,0.1)";
+          const bgColor = isTop3 ? `${rankColors[idx]}15` : "rgba(255,255,255,0.04)";
+
+          return (
+            <div key={e.id} style={{
+              background: bgColor,
+              border: `${isTop3 ? 2 : 1}px solid ${borderColor}`,
+              padding: isTop3 ? "10px 12px" : "8px 10px",
+              display: "flex", alignItems: "center", gap: 10,
+              transition: "all 0.2s",
+            }}>
+              {/* Rank number */}
+              <div style={{ minWidth: 32, textAlign: "center", fontSize: isTop3 ? 16 : 9, fontFamily: FONT_PIXEL, color: isTop3 ? rankColors[idx] : "#555" }}>
+                {medal || `${idx + 1}`}
+              </div>
+
+              {/* Info */}
+              <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 3 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: isTop3 ? 10 : 9, color: isTop3 ? "#fff" : "#ccc", fontFamily: FONT_PIXEL, fontWeight: isTop3 ? "bold" : "normal" }}>🥾 {e.nickname}</span>
+                  <span style={{ fontSize: 7, color: "#666", fontFamily: FONT_PIXEL }}>{e.date}</span>
+                </div>
+                <div style={{ fontSize: 8, color: "#aaa", fontFamily: FONT_PIXEL }}>
+                  ⏱️ {fmtTime(e.timeSec || 0)} | ❤️ {e.lives || 0} | 🔥 x{e.maxCombo || 0}
+                  {e.wish ? ` | ✨${e.wish}` : ""}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <button onClick={onBack} style={{ ...btnStyle("transparent", COLORS.accent), fontSize:9, padding:"10px 24px", marginBottom:16 }}>← 돌아가기</button>
+    </div>
+  );
+}
+
 function btnStyle(bg, color) {
   return { fontFamily:FONT_PIXEL, fontSize:12, padding:"14px 28px", background:bg, color:color||"#fff", border:"4px solid "+(color||"#fff"), borderRadius:0, cursor:"pointer", textTransform:"uppercase", letterSpacing:1, boxShadow:`4px 4px 0px ${color||"#000"}`, transition:"all 0.1s" };
 }
@@ -359,7 +439,8 @@ export default function GwanaksanClimb() {
               style={{ width:"100%", padding:"12px 16px", fontFamily:FONT_PIXEL, fontSize:12, background:"rgba(0,0,0,0.6)", border:`3px solid ${COLORS.accent}`, borderRadius:0, color:"#fff", outline:"none", boxShadow:`3px 3px 0px ${COLORS.accentDark}` }} />
           </div>
           <button onClick={handleStart} disabled={!nickname.trim()} style={{ ...btnStyle(COLORS.character,"#fff"), opacity:nickname.trim()?1:0.4, fontSize:14, padding:"16px 40px", animation:nickname.trim()?"pulse 1.5s infinite":"none" }}>🥾 등산 시작!</button>
-          <div style={{ fontSize:7, color:"#555", marginTop:8 }}>횃불이유괴단 제작 🔥</div>
+          <button onClick={()=>setScreen("ranking")} style={{ ...btnStyle("transparent",COLORS.accent), fontSize:9, padding:"10px 24px", boxShadow:"none", border:`2px solid ${COLORS.accent}` }}>🏆 명예의전당</button>
+          <div style={{ fontSize:7, color:"#555", marginTop:4 }}>횃불이유괴단 제작 🔥</div>
         </div>
       )}
 
@@ -491,6 +572,9 @@ export default function GwanaksanClimb() {
           <div style={{ fontSize:7, color:"#555", marginTop:4, marginBottom:16 }}>횃불이유괴단 © 2025 🔥</div>
         </div>
       )}
+
+      {/* RANKING */}
+      {screen==="ranking" && <Ranking onBack={()=>setScreen("intro")} />}
     </div>
   );
 }
