@@ -286,6 +286,7 @@ function Ranking({ onBack }) {
                   ⏱️ {_fmtTime(e.timeSec || 0)} | ❤️ {e.lives || 0} | 🔥 x{e.maxCombo || 0}
                   {e.wish ? ` | ✨${e.wish}` : ""}
                 </div>
+                {e.message && <div style={{ fontSize: 7, color: "#888", fontFamily: FONT_PIXEL, lineHeight: 1.5, wordBreak: "break-all", marginTop: 2 }}>💬 {e.message}</div>}
               </div>
             </div>
           );
