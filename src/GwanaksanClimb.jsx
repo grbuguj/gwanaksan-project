@@ -99,10 +99,11 @@ function Hearts({ lives }) {
   return <div style={{ display:"flex", gap:4 }}>{Array.from({length:MAX_LIVES}).map((_,i)=><span key={i} style={{ fontSize:14, filter:i<lives?"none":"grayscale(1) opacity(0.3)" }}>❤️</span>)}</div>;
 }
 
-function Certificate({ nickname, wish, canvasRef, onReady }) {
+function Certificate({ nickname, wish, canvasRef, onReady, timeSec, maxCombo, lives }) {
+  const fmtTime=(s)=>`${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;
   useEffect(()=>{
     const canvas=canvasRef.current; if(!canvas) return;
-    const ctx=canvas.getContext("2d"); const W=800,H=560;
+    const ctx=canvas.getContext("2d"); const W=800,H=600;
     canvas.width=W; canvas.height=H;
     ctx.fillStyle=COLORS.certBg; ctx.fillRect(0,0,W,H);
     ctx.strokeStyle=COLORS.certBorder; ctx.lineWidth=6; ctx.strokeRect(20,20,W-40,H-40);
@@ -116,15 +117,20 @@ function Certificate({ nickname, wish, canvasRef, onReady }) {
     ctx.fillStyle="#222"; ctx.font=`18px ${FONT_PIXEL}`; ctx.fillText(`등산가: ${nickname}`, W/2, 210);
     ctx.fillStyle=COLORS.character; ctx.font=`14px ${FONT_PIXEL}`; ctx.fillText(`해발 ${GWANAKSAN_HEIGHT}m 정복!`, W/2, 255);
     if(wish){ctx.fillStyle="#444";ctx.font=`11px ${FONT_PIXEL}`;ctx.fillText(`✨ 소원: ${wish.slice(0,20)} ✨`, W/2, 300);}
+    // Stats
+    ctx.fillStyle="#666"; ctx.font=`10px ${FONT_PIXEL}`;
+    const hearts = "❤️".repeat(lives) + "🖤".repeat(MAX_LIVES - lives);
+    ctx.fillText(`${hearts}  ⏱️ ${fmtTime(timeSec)}  🔥 최대콤보 x${maxCombo}`, W/2, 340);
+    // Date
     const now=new Date();
-    ctx.fillStyle="#888"; ctx.font=`10px ${FONT_PIXEL}`; ctx.fillText(`${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,"0")}.${String(now.getDate()).padStart(2,"0")}`, W/2, 345);
-    ctx.save(); ctx.translate(W/2,430); ctx.rotate(-0.2);
+    ctx.fillStyle="#888"; ctx.font=`10px ${FONT_PIXEL}`; ctx.fillText(`${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,"0")}.${String(now.getDate()).padStart(2,"0")}`, W/2, 375);
+    ctx.save(); ctx.translate(W/2,470); ctx.rotate(-0.2);
     ctx.strokeStyle=COLORS.stamp+"BB"; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(0,0,55,0,Math.PI*2); ctx.stroke();
     ctx.beginPath(); ctx.arc(0,0,48,0,Math.PI*2); ctx.stroke();
     ctx.fillStyle=COLORS.stamp+"CC"; ctx.font=`bold 10px ${FONT_PIXEL}`; ctx.textAlign="center";
     ctx.fillText("횃불이유괴단",0,-10); ctx.font=`8px ${FONT_PIXEL}`; ctx.fillText("CERTIFIED",0,10); ctx.fillText("⛰️🔥",0,30);
     ctx.restore(); if(onReady) onReady();
-  },[nickname,wish,canvasRef,onReady]);
+  },[nickname,wish,canvasRef,onReady,timeSec,maxCombo,lives]);
   return <canvas ref={canvasRef} style={{ width:"100%", maxWidth:500, height:"auto", imageRendering:"pixelated", borderRadius:8, boxShadow:"0 8px 32px rgba(0,0,0,0.3)" }} />;
 }
 
@@ -295,14 +301,17 @@ export default function GwanaksanClimb() {
     } else {
       setIsStumble(true); setShakeScreen(true); setCombo(0);
       sfx.playWrong();
-      setLives(prev=>{
-        const next=prev-1; sfx.playLoseLife(next);
-        if(next<=0){setFallAnim(true);setTimeout(()=>sfx.playGameOver(),200);setTimeout(()=>{setScreen("gameover");setFallAnim(false);},800);}
-        return next;
-      });
+      const newLives = lives - 1;
+      setLives(newLives);
+      sfx.playLoseLife(newLives);
+      if(newLives<=0){
+        setFallAnim(true);
+        setTimeout(()=>sfx.playGameOver(),200);
+        setTimeout(()=>{setScreen("gameover");setFallAnim(false);},800);
+      }
       setTimeout(()=>{setIsStumble(false);setShakeScreen(false);},300);
     }
-  },[screen,isJumping,currentStep,expectedDir,combo,maxCombo,addParticles,fallAnim]);
+  },[screen,isJumping,currentStep,expectedDir,combo,maxCombo,lives,addParticles,fallAnim]);
 
   useEffect(()=>{
     const onKey=(e)=>{
@@ -471,7 +480,7 @@ export default function GwanaksanClimb() {
           <div style={{ animation:"slideUp 0.5s ease-out", textAlign:"center", marginTop:12 }}>
             <div style={{ fontSize:10, color:COLORS.accent, marginBottom:8 }}>🏔️ 등산 완료증 🏔️</div>
           </div>
-          <Certificate nickname={nickname} wish={wish} canvasRef={certCanvasRef} onReady={()=>setCertReady(true)} />
+          <Certificate nickname={nickname} wish={wish} canvasRef={certCanvasRef} onReady={()=>setCertReady(true)} timeSec={timeSec} maxCombo={maxCombo} lives={lives} />
           {certReady && <button onClick={handleCertDownload} style={btnStyle("#FFD700","#222")}>📥 완료증 다운로드</button>}
           <Guestbook nickname={nickname} wish={wish} timeSec={timeSec} maxCombo={maxCombo} lives={lives} />
           <button onClick={()=>{sfx.playUI();setScreen("intro");resetGame();}} style={{ ...btnStyle("transparent",COLORS.accent), fontSize:9, padding:"10px 20px" }}>🔄 다시 등산</button>
