@@ -319,6 +319,7 @@ export default function GwanaksanClimb() {
   const [startTime, setStartTime] = useState(null);
   const [endTime, setEndTime] = useState(null);
   const [shakeScreen, setShakeScreen] = useState(false);
+  const [elapsed, setElapsed] = useState(0);
   const [particles, setParticles] = useState([]);
   const [fallAnim, setFallAnim] = useState(false);
   const [certReady, setCertReady] = useState(false);
@@ -333,6 +334,13 @@ export default function GwanaksanClimb() {
     link.href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap";
     link.rel="stylesheet"; document.head.appendChild(link);
   },[]);
+
+  // Live timer
+  useEffect(()=>{
+    if(screen!=="playing"||!startTime) return;
+    const id=setInterval(()=>setElapsed((Date.now()-startTime)/1000),10);
+    return ()=>clearInterval(id);
+  },[screen,startTime]);
 
   const progress = currentStep / TOTAL_STEPS;
   const altitude = Math.round(progress * GWANAKSAN_HEIGHT);
@@ -358,7 +366,7 @@ export default function GwanaksanClimb() {
   },[]);
 
   const resetGame = useCallback(()=>{
-    setStairs(generateStairs()); setCurrentStep(0); setCombo(0); setMaxCombo(0); setLives(MAX_LIVES); setWish(""); setStartTime(Date.now()); setDirection("left"); setFallAnim(false); setIsJumping(false); setIsStumble(false); setCertReady(false); setMilestoneText(null); prevMilestoneRef.current=-1; inputLockRef.current=false;
+    setStairs(generateStairs()); setCurrentStep(0); setCombo(0); setMaxCombo(0); setLives(MAX_LIVES); setWish(""); setStartTime(Date.now()); setDirection("left"); setFallAnim(false); setIsJumping(false); setIsStumble(false); setCertReady(false); setMilestoneText(null); prevMilestoneRef.current=-1; inputLockRef.current=false; setElapsed(0);
   },[]);
 
   const handleStart = async () => {
@@ -451,10 +459,12 @@ export default function GwanaksanClimb() {
             <div>
               <div style={{ fontSize:7, color:"#aaa" }}>고도</div>
               <div style={{ fontSize:14, color:COLORS.accent }}>{altitude}m</div>
+              <div style={{ marginTop:4 }}><Hearts lives={lives} /></div>
             </div>
             <div style={{ textAlign:"center" }}>
-              <Hearts lives={lives} />
-              <div style={{ fontSize:7, color:"#aaa", marginTop:4 }}>{currentStep}/{TOTAL_STEPS}</div>
+              <div style={{ fontSize:7, color:"#aaa" }}>⏱️ TIME</div>
+              <div style={{ fontSize:16, color:"#fff", fontVariantNumeric:"tabular-nums" }}>{formatTime(elapsed)}</div>
+              <div style={{ fontSize:7, color:"#aaa", marginTop:2 }}>{currentStep}/{TOTAL_STEPS}</div>
             </div>
             <div style={{ textAlign:"right" }}>
               <div style={{ fontSize:7, color:"#aaa" }}>콤보</div>
@@ -498,14 +508,16 @@ export default function GwanaksanClimb() {
               {currentStep===0 && !fallAnim && <div style={{ position:"absolute", left:"35%", top:"60%", transform:"translateX(-50%)" }}><PixelCharacter direction={direction} isJumping={isJumping} isStumble={isStumble} /></div>}
               {fallAnim && <div style={{ position:"absolute", left:"40%", top:"40%", animation:"fallDown 0.8s ease-in forwards", zIndex:30 }}><PixelCharacter direction={direction} isJumping={false} isStumble={true} /></div>}
               {particles.map(p=><div key={p.id} style={{ position:"absolute", left:p.x, top:p.y, fontSize:14, animation:"fadeParticle 0.8s ease-out forwards", pointerEvents:"none" }}>{p.emoji}</div>)}
-              {currentStep>=TOTAL_STEPS && (
-                <div style={{ position:"absolute", inset:0, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", background:"rgba(0,0,0,0.5)", animation:"bounceIn 0.5s ease-out" }}>
-                  <div style={{ fontSize:64 }}>🎉</div>
-                  <div style={{ fontSize:16, color:COLORS.accent, textShadow:"2px 2px 0 #000" }}>정상 도착!</div>
-                </div>
-              )}
             </div>
           </div>
+
+          {/* Summit overlay - full screen */}
+          {currentStep>=TOTAL_STEPS && (
+            <div style={{ position:"absolute", inset:0, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", background:"rgba(0,0,0,0.5)", animation:"bounceIn 0.5s ease-out", zIndex:25 }}>
+              <div style={{ fontSize:64 }}>🎉</div>
+              <div style={{ fontSize:16, color:COLORS.accent, textShadow:"2px 2px 0 #000" }}>정상 도착!</div>
+            </div>
+          )}
 
           <div style={{ position:"absolute", bottom:0, left:0, right:0, height:80, display:"flex", zIndex:20 }}>
             <button
